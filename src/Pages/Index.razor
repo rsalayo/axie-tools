@@ -1,0 +1,218 @@
+﻿@page "/"
+@using Axie.Tools.Models
+
+
+<div class="row background-energy" style="background-image: url(@backgroundAxie)">
+	<h1>Round @round</h1>
+
+	<h1 class="display-1 fw-bold energy text-dark">@energy</h1>
+
+	<div class="row mb-5">
+		<div class="col">
+			<div class="d-grid gap-2">
+				<button class="btn btn-outline-secondary btn-lg" @onclick="Reset">New Game</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<label for="gained" class="form-label">Used</label>
+			<div class="input-group mb-3">
+				<button class="btn btn-danger btn-lg w-25" id="button-used-decrement" @onclick="DecrementUsed">-</button>
+				<input class="form-control form-control-lg text-center energy-input" type="text" id="used" value="@used" disabled />
+				<button class="btn btn-success btn-lg w-25" id="button-used-increment" @onclick="IncrementUsed">+</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<label for="gained" class="form-label">Gained</label>
+			<div class="input-group mb-3">
+				<button class="btn btn-danger btn-lg w-25" id="button-gained-decrement" @onclick="DecrementGained">-</button>
+				<input class="form-control form-control-lg text-center energy-input" type="text" id="gained" value="@gained" disabled />
+				<button class="btn btn-success btn-lg w-25" id="button-gained-increment" @onclick="IncrementGained">+</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<label for="gained" class="form-label">Destroyed</label>
+			<div class="input-group mb-3">
+				<button class="btn btn-danger btn-lg w-25" id="button-destroyed-decrement" @onclick="DecrementDestroyed">-</button>
+				<input class="form-control form-control-lg text-center energy-input" type="text" id="destroyed" value="@destroyed" disabled />
+				<button class="btn btn-success btn-lg w-25" id="button-destroyed-increment" @onclick="IncrementDestroyed">+</button>
+			</div>
+		</div>
+	</div>
+
+
+	<div class="row mt-4">
+		<div class="btn-group btn-group-lg d-flex" role="group" aria-label="Grouped Buttons">
+			<button class="btn btn-outline-secondary" @onclick="PrevRound" disabled="@IsDisabled">Prev Round</button>
+			<button class="btn btn-outline-primary" @onclick="NextRound">Next Round</button>
+		</div>
+	</div>
+</div>
+
+
+
+@code {
+	private int destroyed;
+
+	private int gained;
+
+	private int used;
+
+	private int energy = 3;
+
+	private int round = 1;
+
+	private string backgroundAxie = "";
+
+	private readonly List<Round> rounds = new List<Round>();
+
+	protected bool IsDisabled { get; set; } = true;
+
+	readonly string[] axies = { "1564563", "2522793", "2817347", "3931990", "4169482", "4756380", "4994287", "5240863", "5287148", "5717305" };
+
+	protected override async Task OnInitializedAsync()
+	{
+		var rng = new Random();
+		var randomAxie = axies[rng.Next(0, axies.Length - 1)];
+
+		backgroundAxie = $"https://storage.googleapis.com/assets.axieinfinity.com/axies/{randomAxie}/axie/axie-full-transparent.png";
+
+		await Task.Delay(1);
+	}
+
+	private void IncrementUsed()
+	{
+		if (used < 10 && energy > used)
+		{
+			used++;
+		}
+	}
+
+	private void DecrementUsed()
+	{
+		if (used > 0)
+		{
+			used--;
+		}
+	}
+
+	private void IncrementGained()
+	{
+		if (gained < 10)
+		{
+			gained++;
+		}
+	}
+
+	private void DecrementGained()
+	{
+		if (gained > 0)
+		{
+			gained--;
+		}
+	}
+
+	private void IncrementDestroyed()
+	{
+		if (destroyed < 10)
+		{
+			destroyed++;
+		}
+	}
+
+	private void DecrementDestroyed()
+	{
+		if (destroyed > 0)
+		{
+			destroyed--;
+		}
+	}
+
+	private void Reset()
+	{
+		destroyed = 0;
+		used = 0;
+		gained = 0;
+		energy = 3;
+		round = 1;
+		rounds.Clear();
+	}
+
+	private void PrevRound()
+	{
+		if(round <= 2)
+		{
+			IsDisabled = true;
+		}
+
+		round--;
+		var currentRound = rounds.First(x => x.Id == round);
+
+		gained = currentRound.Gained;
+		used = currentRound.Used;
+		destroyed = currentRound.Destroyed;
+		energy = currentRound.Remaining;
+
+		Console.WriteLine($"Round {currentRound.Id}: {currentRound.Remaining} + {currentRound.Gained} - {currentRound.Used} - {currentRound.Destroyed} = {currentRound.Energy}");
+	}
+
+	private void NextRound()
+	{
+		var currentRound = rounds.FirstOrDefault(x => x.Id == round);
+		if(currentRound != null)
+		{
+			gained = currentRound.Gained;
+			used = currentRound.Used;
+			destroyed = currentRound.Destroyed;
+			energy = currentRound.Energy;
+		}
+		else
+		{
+			currentRound = new Round
+			{
+				Id = round,
+				Gained = gained,
+				Used = used,
+				Destroyed = destroyed,
+				Remaining = energy
+			};
+
+			rounds.Add(currentRound);
+			energy = currentRound.Energy;
+
+			destroyed = 0;
+			used = 0;
+			gained = 0;
+		}
+
+		Console.WriteLine($"Round {currentRound.Id}: {currentRound.Remaining} + {currentRound.Gained} - {currentRound.Used} - {currentRound.Destroyed} = {currentRound.Energy}");
+
+		round++;
+		IsDisabled = false;
+	}
+
+	private Round GetCurrentEnergy()
+	{
+		var currentRound = new Round
+		{
+			Gained = gained,
+			Used = used,
+			Destroyed = destroyed,
+			Remaining = energy
+		};
+
+		Console.WriteLine($"Round {round}: {currentRound.Remaining} + {gained} - {used} - {destroyed} = {currentRound.Energy}");
+		energy = currentRound.Energy + 2;
+
+		return currentRound;
+	}
+
+}
